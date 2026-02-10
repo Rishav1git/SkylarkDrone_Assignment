@@ -38,6 +38,7 @@ def get_gspread_client():
         return None
 
 
+@st.cache_data(ttl=60)  # Cache for 60 seconds to avoid API quota limits
 def load_pilot_roster() -> pd.DataFrame:
     """
     Load pilot roster from Google Sheets and return as pandas DataFrame.
@@ -67,6 +68,7 @@ def load_pilot_roster() -> pd.DataFrame:
         return pd.DataFrame()
 
 
+@st.cache_data(ttl=60)  # Cache for 60 seconds to avoid API quota limits
 def load_drone_fleet() -> pd.DataFrame:
     """
     Load drone fleet from Google Sheets and return as pandas DataFrame.
@@ -93,6 +95,7 @@ def load_drone_fleet() -> pd.DataFrame:
         return pd.DataFrame()
 
 
+@st.cache_data(ttl=60)  # Cache for 60 seconds to avoid API quota limits
 def load_missions() -> pd.DataFrame:
     """
     Load missions from Google Sheets and return as pandas DataFrame.
