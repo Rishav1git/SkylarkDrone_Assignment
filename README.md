@@ -16,7 +16,7 @@ AI-powered conversational assistant for managing drone operations, pilot assignm
 
 - **Language**: Python 3.10+
 - **UI**: Streamlit
-- **AI**: OpenAI GPT-4o
+- **AI**: Groq (Llama 3.1 70B) - **100% FREE!**
 - **Orchestration**: LangChain
 - **Database**: Google Sheets (via gspread)
 - **Deployment**: Streamlit Cloud
