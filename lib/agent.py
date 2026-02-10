@@ -3,20 +3,18 @@ LangChain Agent Setup
 Orchestrates the AI agent with Groq and custom tools.
 """
 
-from langchain.agents import AgentExecutor, create_tool_calling_agent
+from langchain.agents import initialize_agent, AgentType
 from langchain_groq import ChatGroq
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.schema import SystemMessage
 from lib.tools import get_all_tools
 import streamlit as st
 
 
-def create_agent() -> AgentExecutor:
+def create_agent():
     """
     Create and configure the LangChain agent with Groq and custom tools.
     
     Returns:
-        Configured AgentExecutor instance
+        Configured agent instance
     """
     # Get Groq API key from Streamlit secrets
     api_key = st.secrets.get("GROQ_API_KEY", "")
@@ -25,15 +23,18 @@ def create_agent() -> AgentExecutor:
         st.error("Groq API key not found. Please configure in .streamlit/secrets.toml")
         return None
     
-    # Initialize Groq LLM (FREE!) with tool binding
+    # Initialize Groq LLM (FREE!)
     llm = ChatGroq(
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-70b-versatile",
         temperature=0,
         api_key=api_key
     )
     
-    # System prompt
-    system_message = """You are an AI assistant for Skylark Drones operations coordination.
+    # Get custom tools
+    tools = get_all_tools()
+    
+    # System prompt prefix
+    system_prefix = """You are an AI assistant for Skylark Drones operations coordination.
 
 Your job is to help coordinate drone operations by:
 - Managing pilot rosters and availability
@@ -49,69 +50,39 @@ Your job is to help coordinate drone operations by:
 4. When conflicts are detected, explain them clearly and suggest alternatives
 5. Confirm Google Sheets updates in your responses
 
-**Available Tools:**
-- query_pilots: Find pilots by skills, location, or status
-- query_drones: Find drones by capabilities, location, or status
-- update_pilot_status: Change pilot status (syncs to Google Sheets)
-- update_drone_status: Change drone status (syncs to Google Sheets)
-- check_conflicts: Detect scheduling conflicts and skill mismatches
-- assign_to_mission: Assign pilot and drone to mission (with conflict checking)
-- urgent_reassign: Handle priority-based resource reallocation
-
 Always verify data before making changes. Be helpful and professional."""
     
-    # Create prompt template
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", system_message),
-        MessagesPlaceholder(variable_name="chat_history", optional=True),
-        ("human", "{input}"),
-        MessagesPlaceholder(variable_name="agent_scratchpad")
-    ])
-    
-    # Get custom tools
-    tools = get_all_tools()
-    
-    # Bind tools to LLM for Groq compatibility
-    llm_with_tools = llm.bind_tools(tools)
-    
-    # Create agent with tool calling (Groq compatible)
-    agent = create_tool_calling_agent(
-        llm=llm_with_tools,
+    # Create agent using simpler initialization (better Groq compatibility)
+    agent = initialize_agent(
         tools=tools,
-        prompt=prompt
-    )
-    
-    # Create agent executor
-    agent_executor = AgentExecutor(
-        agent=agent,
-        tools=tools,
+        llm=llm,
+        agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
         verbose=True,
         handle_parsing_errors=True,
-        max_iterations=10
+        max_iterations=10,
+        agent_kwargs={
+            "prefix": system_prefix
+        }
     )
     
-    return agent_executor
+    return agent
 
 
-def run_agent(agent_executor: AgentExecutor, user_input: str, chat_history: list = None) -> str:
+def run_agent(agent, user_input: str, chat_history: list = None) -> str:
     """
-    Run the agent with user input and chat history.
+    Run the agent with user input.
     
     Args:
-        agent_executor: Configured AgentExecutor
+        agent: Configured agent instance
         user_input: User's message
-        chat_history: Previous conversation messages
+        chat_history: Previous conversation messages (not used with STRUCTURED_CHAT)
     
     Returns:
         Agent's response
     """
     try:
-        result = agent_executor.invoke({
-            "input": user_input,
-            "chat_history": chat_history or []
-        })
-        
-        return result.get("output", "Sorry, I couldn't process that request.")
+        result = agent.run(user_input)
+        return result
         
     except Exception as e:
         return f"❌ Error: {str(e)}\n\nPlease try rephrasing your request or check the configuration."
