@@ -47,12 +47,15 @@
 
 ---
 
-### Step 2: Get OpenAI API Key (5 minutes)
+### Step 2: Get Groq API Key (2 minutes) - **100% FREE!**
 
-1. Go to [OpenAI Platform](https://platform.openai.com/api-keys)
-2. Create new API key
-3. Copy the key (starts with `sk-...`)
-4. **Important**: Add billing method if not already done
+1. Go to [Groq Cloud Console](https://console.groq.com/)
+2. Sign up with Google/GitHub (no credit card needed!)
+3. Go to API Keys section
+4. Create new API key
+5. Copy the key (starts with `gsk_...`)
+
+**✅ Completely FREE - No billing setup required!**
 
 ---
 
@@ -67,7 +70,7 @@ New-Item .streamlit\secrets.toml
 
 #### 3.2 Edit `.streamlit/secrets.toml`
 ```toml
-OPENAI_API_KEY = "sk-your-actual-openai-key-here"
+GROQ_API_KEY = "gsk-your-actual-groq-key-here"
 
 [GOOGLE_SHEETS_CREDENTIALS]
 # Paste contents of credentials.json here
@@ -150,7 +153,7 @@ All 8 commits will be pushed with clean history!
 #### 6.2 Add Secrets
 Paste the same content from local `.streamlit/secrets.toml`:
 ```toml
-OPENAI_API_KEY = "sk-..."
+GROQ_API_KEY = "gsk-..."
 
 [GOOGLE_SHEETS_CREDENTIALS]
 type = "service_account"
@@ -200,7 +203,7 @@ Go to [Google Form](https://forms.gle/CzC7VgAMbFC3Tqhs7) and submit:
 
 ## 🔧 Troubleshooting
 
-### Issue: "OpenAI API key not found"
+### Issue: "Groq API key not found"
 **Fix**: Check `.streamlit/secrets.toml` has correct format with no extra spaces
 
 ### Issue: "Failed to load pilot roster"
