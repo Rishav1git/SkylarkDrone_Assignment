@@ -73,6 +73,24 @@ def run_agent(llm, user_input: str, chat_history: list = None) -> str:
             # Check conflicts
             result = tool_map["check_conflicts"].func()
             
+        elif "urgent" in lower_input and ("reassign" in lower_input or "reallocate" in lower_input):
+            # Urgent reassignment
+            # Try to extract from_project and to_project
+            words = user_input.split()
+            projects = []
+            for word in words:
+                if word.upper().startswith("PRJ") or "project" in word.lower():
+                    projects.append(word.replace("project", "").strip())
+            
+            if len(projects) >= 2:
+                result = tool_map["urgent_reassign"].func(
+                    from_project=projects[0],
+                    to_project=projects[1],
+                    reason="Urgent priority request"
+                )
+            else:
+                result = "❌ Please specify both source and target projects for urgent reassignment.\nExample: 'urgent reassignment from PRJ001 to PRJ002'"
+            
         elif "assign" in lower_input:
             # Smart assignment - parse names and execute
             pilots_df, drones_df, missions_df = load_all_data()
