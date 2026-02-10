@@ -36,7 +36,7 @@ def create_agent():
 
 def run_agent(llm, user_input: str, chat_history: list = None) -> str:
     """
-    Run the agent with user input using simple tool routing.
+    Run the agent with user input using intelligent tool routing.
     
     Args:
         llm: Configured LLM instance
@@ -47,28 +47,11 @@ def run_agent(llm, user_input: str, chat_history: list = None) -> str:
         Agent's response
     """
     try:
+        from lib.sheets import load_all_data
+        
         # Get tools
         tools = get_all_tools()
         tool_map = {tool.name: tool for tool in tools}
-        
-        # Create system message with tool descriptions
-        system_msg = """You are an AI assistant for Skylark Drones operations coordination.
-
-Available tools and when to use them:
-- query_pilots(skills, location, status): Find pilots by criteria. Use when asked about pilots, availability, or skills.
-- query_drones(capabilities, location, status): Find drones by criteria. Use when asked about drones or equipment.
-- update_pilot_status(pilot_id, new_status): Update pilot status. Use when changing pilot availability.
-- update_drone_status(drone_id, new_status): Update drone status. Use when changing drone status.
-- check_conflicts(pilot_id, drone_id, project_id): Check for conflicts. Use before assignments.
-- assign_to_mission(pilot_id, drone_id, project_id): Assign resources. Use for new assignments.
-- urgent_reassign(from_project, to_project, reason): Handle urgent reassignments.
-
-For each request:
-1. Determine which tool(s) to use
-2. Call the appropriate tool(s)
-3. Format the results clearly with emojis (✅ ⚠️ ❌)
-
-Be concise and helpful."""
         
         # Determine which tool to call based on input
         lower_input = user_input.lower()
@@ -91,16 +74,58 @@ Be concise and helpful."""
             result = tool_map["check_conflicts"].func()
             
         elif "assign" in lower_input:
-            # Let LLM handle assignment with context
-            messages = [
-                SystemMessage(content=system_msg),
-                HumanMessage(content=f"{user_input}\n\nPlease guide me through making this assignment. What information do you need?")
-            ]
-            response = llm.invoke(messages)
-            result = response.content
+            # Smart assignment - parse names and execute
+            pilots_df, drones_df, missions_df = load_all_data()
             
+            # Try to extract pilot name (look for common names in input)
+            pilot_id = None
+            pilot_name = None
+            for _, pilot in pilots_df.iterrows():
+                name_lower = pilot['name'].lower()
+                if name_lower in lower_input or pilot['pilot_id'].lower() in lower_input:
+                    pilot_id = pilot['pilot_id']
+                    pilot_name = pilot['name']
+                    break
+            
+            # Try to extract project (look for "client" or "project" or "PRJ")
+            project_id = None
+            project_name = None
+            for _, mission in missions_df.iterrows():
+                proj_lower = mission['project_id'].lower()
+                client_lower = mission.get('client', '').lower() if 'client' in mission else ''
+                
+                if proj_lower in lower_input or client_lower in lower_input:
+                    project_id = mission['project_id']
+                    project_name = mission.get('client', mission['project_id'])
+                    break
+            
+            # Find available drone
+            available_drones = drones_df[drones_df['status'] == 'Available']
+            drone_id = available_drones.iloc[0]['drone_id'] if not available_drones.empty else None
+            
+            if pilot_id and project_id and drone_id:
+                # Execute assignment
+                result = tool_map["assign_to_mission"].func(
+                    pilot_id=pilot_id,
+                    drone_id=drone_id,
+                    project_id=project_id
+                )
+            elif pilot_id and project_id:
+                result = f"❌ Found pilot {pilot_name} ({pilot_id}) and project {project_name} ({project_id}), but no available drones!"
+            elif pilot_id:
+                result = f"❌ Found pilot {pilot_name} ({pilot_id}), but couldn't identify the project. Available projects:\n"
+                for _, m in missions_df.head(3).iterrows():
+                    result += f"• {m['project_id']}: {m.get('client', 'N/A')}\n"
+            else:
+                result = f"❌ Couldn't identify pilot in the query. Try using their name or ID. Available pilots:\n"
+                for _, p in pilots_df[pilots_df['status'] == 'Available'].head(3).iterrows():
+                    result += f"• {p['pilot_id']}: {p['name']}\n"
+        
         else:
             # Use LLM for general queries
+            system_msg = """You are a helpful AI assistant for drone operations. 
+            Answer questions about pilot/drone management briefly and clearly."""
+            
             messages = [
                 SystemMessage(content=system_msg),
                 HumanMessage(content=user_input)
