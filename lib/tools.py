@@ -6,7 +6,7 @@ Defines custom tools for the AI agent to interact with drone operations data.
 from langchain.tools import tool
 from typing import Optional
 import pandas as pd
-from lib.sheets import update_pilot_status, update_drone_status, load_all_data
+from lib.sheets import update_pilot_status as sheets_update_pilot, update_drone_status as sheets_update_drone, load_all_data
 from lib.conflicts import detect_all_conflicts, get_conflict_summary, can_proceed_with_assignment
 
 
@@ -120,7 +120,7 @@ def query_drones(capabilities: Optional[str] = None, location: Optional[str] = N
 
 
 @tool
-def update_pilot_status_tool(pilot_id: str, new_status: str) -> str:
+def update_pilot_status(pilot_id: str, new_status: str) -> str:
     """
     Update pilot status in Google Sheets.
     
@@ -139,7 +139,7 @@ def update_pilot_status_tool(pilot_id: str, new_status: str) -> str:
     # If setting to Available or On Leave, clear assignment
     assignment = "–" if new_status in ['Available', 'On Leave'] else None
     
-    success = update_pilot_status(pilot_id, new_status, assignment or "–")
+    success = sheets_update_pilot(pilot_id, new_status, assignment or "–")
     
     if success:
         return f"✅ Updated {pilot_id} status to '{new_status}'. Google Sheet synced."
@@ -148,7 +148,7 @@ def update_pilot_status_tool(pilot_id: str, new_status: str) -> str:
 
 
 @tool
-def update_drone_status_tool(drone_id: str, new_status: str) -> str:
+def update_drone_status(drone_id: str, new_status: str) -> str:
     """
     Update drone status in Google Sheets.
     
@@ -166,7 +166,7 @@ def update_drone_status_tool(drone_id: str, new_status: str) -> str:
     
     assignment = "–" if new_status in ['Available', 'Maintenance'] else None
     
-    success = update_drone_status(drone_id, new_status, assignment or "–")
+    success = sheets_update_drone(drone_id, new_status, assignment or "–")
     
     if success:
         return f"✅ Updated {drone_id} status to '{new_status}'. Google Sheet synced."
@@ -175,7 +175,7 @@ def update_drone_status_tool(drone_id: str, new_status: str) -> str:
 
 
 @tool
-def check_conflicts_tool(pilot_id: Optional[str] = None, drone_id: Optional[str] = None, project_id: Optional[str] = None) -> str:
+def check_conflicts(pilot_id: Optional[str] = None, drone_id: Optional[str] = None, project_id: Optional[str] = None) -> str:
     """
     Check for scheduling conflicts, skill mismatches, and equipment issues.
     
@@ -202,7 +202,7 @@ def check_conflicts_tool(pilot_id: Optional[str] = None, drone_id: Optional[str]
 
 
 @tool
-def assign_to_mission_tool(pilot_id: str, drone_id: str, project_id: str) -> str:
+def assign_to_mission(pilot_id: str, drone_id: str, project_id: str) -> str:
     """
     Assign pilot and drone to a mission after checking conflicts.
     
@@ -242,8 +242,8 @@ def assign_to_mission_tool(pilot_id: str, drone_id: str, project_id: str) -> str
         return f"❌ **Cannot assign due to CRITICAL conflicts:**\n\n{get_conflict_summary(conflicts)}"
     
     # Proceed with assignment
-    pilot_updated = update_pilot_status(pilot_id, 'Assigned', project_id)
-    drone_updated = update_drone_status(drone_id, 'Assigned', project_id)
+    pilot_updated = sheets_update_pilot(pilot_id, 'Assigned', project_id)
+    drone_updated = sheets_update_drone(drone_id, 'Assigned', project_id)
     
     if pilot_updated and drone_updated:
         result = f"✅ **Assignment successful!**\n\n"
@@ -260,7 +260,7 @@ def assign_to_mission_tool(pilot_id: str, drone_id: str, project_id: str) -> str
 
 
 @tool
-def urgent_reassign_tool(from_project: str, to_project: str, reason: str = "Urgent priority") -> str:
+def urgent_reassign(from_project: str, to_project: str, reason: str = "Urgent priority") -> str:
     """
     Handle urgent reassignment of resources from lower to higher priority mission.
     
@@ -307,7 +307,7 @@ def urgent_reassign_tool(from_project: str, to_project: str, reason: str = "Urge
     result += f"• {from_project} will need replacement resources\n"
     result += f"• {to_project} can start immediately after reassignment\n\n"
     
-    result += "⚠️ **Note:** Execute assignment using `assign_to_mission_tool` to complete reassignment."
+    result += "⚠️ **Note:** Execute assignment using `assign_to_mission` to complete reassignment."
     
     return result
 
@@ -317,9 +317,9 @@ def get_all_tools():
     return [
         query_pilots,
         query_drones,
-        update_pilot_status_tool,
-        update_drone_status_tool,
-        check_conflicts_tool,
-        assign_to_mission_tool,
-        urgent_reassign_tool
+        update_pilot_status,
+        update_drone_status,
+        check_conflicts,
+        assign_to_mission,
+        urgent_reassign
     ]
