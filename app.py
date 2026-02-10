@@ -172,7 +172,7 @@ with col1:
     st.caption("🔒 Data syncs with Google Sheets")
 
 with col2:
-    st.caption("🤖 Powered by OpenAI GPT-4o")
+    st.caption("🤖 Powered by Groq (Llama 3.1)")
 
 with col3:
     st.caption("⚡ Real-time conflict detection")

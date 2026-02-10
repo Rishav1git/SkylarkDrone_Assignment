@@ -4,7 +4,7 @@ Orchestrates the AI agent with OpenAI and custom tools.
 """
 
 from langchain.agents import AgentExecutor, create_openai_functions_agent
-from langchain_openai import ChatOpenAI
+from langchain_groq import ChatGroq
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.schema import SystemMessage
 from lib.tools import get_all_tools
@@ -13,21 +13,21 @@ import streamlit as st
 
 def create_agent() -> AgentExecutor:
     """
-    Create and configure the LangChain agent with OpenAI and custom tools.
+    Create and configure the LangChain agent with Groq and custom tools.
     
     Returns:
         Configured AgentExecutor instance
     """
-    # Get OpenAI API key from Streamlit secrets
-    api_key = st.secrets.get("OPENAI_API_KEY", "")
+    # Get Groq API key from Streamlit secrets
+    api_key = st.secrets.get("GROQ_API_KEY", "")
     
     if not api_key:
-        st.error("OpenAI API key not found. Please configure in .streamlit/secrets.toml")
+        st.error("Groq API key not found. Please configure in .streamlit/secrets.toml")
         return None
     
-    # Initialize OpenAI LLM
-    llm = ChatOpenAI(
-        model="gpt-4o",
+    # Initialize Groq LLM (FREE!)
+    llm = ChatGroq(
+        model="llama-3.1-70b-versatile",
         temperature=0,
         api_key=api_key
     )
