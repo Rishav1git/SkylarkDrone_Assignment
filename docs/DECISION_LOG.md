@@ -72,36 +72,8 @@ Built an AI-powered conversational assistant for drone operations coordination u
 
 ---
 
-## Edge Case Handling
 
-| Edge Case | Detection | Action | Severity |
-|-----------|-----------|--------|----------|
-| **Double Booking** | `status == 'Assigned'` and `current_assignment != '–'` | Block assignment, suggest alternatives | **CRITICAL** |
-| **Skill Mismatch** | Missing required skills | Show warning, allow override | **WARNING** |
-| **Cert Mismatch** | Missing required certifications | Block assignment | **CRITICAL** |
-| **Drone Maintenance** | `status == 'Maintenance'` OR `maintenance_due < start + 7 days` | Block if in maintenance, warn if due soon | **CRITICAL / WARNING** |
-| **Location Mismatch** | `pilot.location != mission.location` | Show warning (requires travel) | **WARNING** |
 
----
-
-## Deployment Challenges & Solutions
-
-### Challenge 1: LangChain Version Conflicts
-**Problem**: Streamlit Cloud installed newer LangChain that deprecated `initialize_agent`.  
-**Solution**: Rewrote agent with simple keyword-based tool routing, removed dependency on deprecated functions.  
-**Lesson**: Pin critical dependencies; avoid deprecated APIs in cloud environments.
-
-### Challenge 2: GitHub Secret Scanning
-**Problem**: Accidentally committed Google Cloud credentials JSON, push blocked.  
-**Solution**: `git reset`, added `*.json` to `.gitignore`, removed from tracking.  
-**Lesson**: Always configure `.gitignore` before first commit.
-
-### Challenge 3: Google Drive API Disabled
-**Problem**: Sheets API requires Drive API to be enabled in Google Cloud Console.  
-**Solution**: Enabled Drive API via provided console link, waited 30s for propagation.  
-**Lesson**: Document all required Google Cloud APIs in setup guide.
-
----
 
 ## Future Improvements (Given More Time)
 
@@ -116,30 +88,3 @@ Built an AI-powered conversational assistant for drone operations coordination u
 
 ---
 
-## Requirements Validation
-
-| Requirement | Implementation | Status |
-|-------------|----------------|--------|
-| Conversational Interface | Streamlit chat UI + Groq LLM | ✅ |
-| Roster Management | `query_pilots`, `update_pilot_status` | ✅ |
-| Assignment Tracking | `assign_to_mission` with conflict checks | ✅ |
-| Drone Inventory | `query_drones`, `update_drone_status` | ✅ |
-| Conflict Detection | 4 edge cases handled | ✅ |
-| Google Sheets Sync | gspread read/write operations | ✅ |
-| Urgent Reassignments | `urgent_reassign` with impact analysis | ✅ |
-| Hosted Prototype | Streamlit Cloud deployment | ✅ |
-| Decision Log | This document (2 pages) | ✅ |
-| Source Code | GitHub repo with clean commits | ✅ |
-
----
-
-## Conclusion
-
-Successfully delivered a functional AI agent within the 6-hour timeline by prioritizing:
-1. **Free tools** (Groq LLM, Streamlit Cloud) for zero-cost demo
-2. **Rapid prototyping** (Python stack) over production architecture
-3. **Essential features** (conflict detection) over nice-to-haves (caching)
-
-**Key Success**: Switching to Groq saved ~$50 in API costs while maintaining functionality.  
-**Biggest Challenge**: LangChain deprecation during deployment → Fixed with simplified agent.  
-**Learning**: For prototypes, optimize for demo-ability and cost over scalability.
