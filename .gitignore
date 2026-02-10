@@ -23,6 +23,8 @@ dist/
 # Google Credentials
 credentials.json
 service-account.json
+*credentials*.json
+*.json
 
 # OS
 .DS_Store
