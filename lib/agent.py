@@ -1,9 +1,9 @@
 """
 LangChain Agent Setup
-Orchestrates the AI agent with OpenAI and custom tools.
+Orchestrates the AI agent with Groq and custom tools.
 """
 
-from langchain.agents import AgentExecutor, create_openai_functions_agent
+from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_groq import ChatGroq
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.schema import SystemMessage
@@ -25,9 +25,9 @@ def create_agent() -> AgentExecutor:
         st.error("Groq API key not found. Please configure in .streamlit/secrets.toml")
         return None
     
-    # Initialize Groq LLM (FREE!)
+    # Initialize Groq LLM (FREE!) with tool binding
     llm = ChatGroq(
-        model="llama-3.1-70b-versatile",
+        model="llama-3.3-70b-versatile",
         temperature=0,
         api_key=api_key
     )
@@ -52,17 +52,17 @@ Your job is to help coordinate drone operations by:
 **Available Tools:**
 - query_pilots: Find pilots by skills, location, or status
 - query_drones: Find drones by capabilities, location, or status
-- update_pilot_status_tool: Change pilot status (syncs to Google Sheets)
-- update_drone_status_tool: Change drone status (syncs to Google Sheets)
-- check_conflicts_tool: Detect scheduling conflicts and skill mismatches
-- assign_to_mission_tool: Assign pilot and drone to mission (with conflict checking)
-- urgent_reassign_tool: Handle priority-based resource reallocation
+- update_pilot_status: Change pilot status (syncs to Google Sheets)
+- update_drone_status: Change drone status (syncs to Google Sheets)
+- check_conflicts: Detect scheduling conflicts and skill mismatches
+- assign_to_mission: Assign pilot and drone to mission (with conflict checking)
+- urgent_reassign: Handle priority-based resource reallocation
 
 Always verify data before making changes. Be helpful and professional."""
     
     # Create prompt template
     prompt = ChatPromptTemplate.from_messages([
-        SystemMessage(content=system_message),
+        ("system", system_message),
         MessagesPlaceholder(variable_name="chat_history", optional=True),
         ("human", "{input}"),
         MessagesPlaceholder(variable_name="agent_scratchpad")
@@ -71,9 +71,12 @@ Always verify data before making changes. Be helpful and professional."""
     # Get custom tools
     tools = get_all_tools()
     
-    # Create agent
-    agent = create_openai_functions_agent(
-        llm=llm,
+    # Bind tools to LLM for Groq compatibility
+    llm_with_tools = llm.bind_tools(tools)
+    
+    # Create agent with tool calling (Groq compatible)
+    agent = create_tool_calling_agent(
+        llm=llm_with_tools,
         tools=tools,
         prompt=prompt
     )
